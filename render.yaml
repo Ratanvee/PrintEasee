@@ -1,0 +1,34 @@
+databases:
+  - name: my-database
+    plan: free
+
+services:
+  - name: myproject
+    type: web
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py migrate  # Apply database migrations
+    startCommand: gunicorn myproject.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: my-database
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+
+  - name: printer-agent
+    type: worker
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python printer_agent/print_manager.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: my-database
+          property: connectionString
