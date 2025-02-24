@@ -90,7 +90,7 @@ AUTH_USER_MODEL = 'users.CustomUser'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
-ALLOWED_HOSTS = ['printerapp-rehke.onrender.com', '127.0.0.1']
+ALLOWED_HOSTS = ['printeasee.onrender.com', '127.0.0.1']
 
 
 

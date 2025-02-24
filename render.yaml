@@ -7,10 +7,10 @@ services:
     name: printerapp
     env: python
     buildCommand: |
-      apt-get update && apt-get install -y libcups2-dev cups gcc python3-dev
+      chmod +x install_pycups.sh
+      ./install_pycups.sh
       pip install --no-cache-dir -r requirements.txt
     startCommand: gunicorn myproject.wsgi:application
-
 
   - name: printer-agent
     type: worker
