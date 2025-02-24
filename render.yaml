@@ -7,8 +7,6 @@ services:
     name: printerapp
     env: python
     buildCommand: |
-      chmod +x install_pycups.sh
-      ./install_pycups.sh
       pip install --no-cache-dir -r requirements.txt
     startCommand: gunicorn myproject.wsgi:application
 
