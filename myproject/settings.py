@@ -93,7 +93,7 @@ LOGOUT_REDIRECT_URL = 'login'
 ALLOWED_HOSTS = ['printeasee.onrender.com', '127.0.0.1']
 
 
-
+ 
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
