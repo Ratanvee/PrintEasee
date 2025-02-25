@@ -87,23 +87,24 @@ def dashboard(request):
         "week": get_order_and_revenue(start_of_week),
         "month": get_order_and_revenue(start_of_month),
         "year": get_order_and_revenue(start_of_year),
-        "all_time": {"orders": Document.objects.filter(user=user).count(), "revenue": Document.objects.filter(user=user).aggregate(Sum('price'))['price__sum'] or 0}
+        "all_time": {
+            "orders": Document.objects.filter(user=user).count(),
+            "revenue": Document.objects.filter(user=user).aggregate(Sum('price'))['price__sum'] or 0
+        }
     }
 
-    # Fetch all uploaded documents of the user
+    # Fetch all uploaded documents of the logged-in owner
     all_orders = Document.objects.filter(user=user).order_by('-uploaded_at')
 
-    # ✅ FIXED: Count unique customers who uploaded documents to this user's shop
-    unique_customers = Document.objects.values('user').distinct().count()
+    # Count unique customers who uploaded documents for this logged-in owner
+    unique_customers = Document.objects.filter(user=user).values('user').distinct().count()
 
+    completed_orders = Document.objects.filter(user=user, status="completed").count()
+    in_process_orders = Document.objects.filter(user=user, status="in_process").count()
+    pending_orders = Document.objects.filter(user=user, status="pending").count()
 
-
-
-    completed_orders = Document.objects.filter(status="completed").count()
-    in_process_orders = Document.objects.filter(status="in_process").count()
-    pending_orders = Document.objects.filter(status="pending").count()
-
-
+    # Total pages printed by this owner
+    total_pages_printed = Document.objects.filter(user=user).aggregate(Sum('num_pages'))['num_pages__sum'] or 0
 
     return render(request, 'users/dashboard.html', {
         'user': user,
@@ -113,9 +114,8 @@ def dashboard(request):
         "completed_orders": completed_orders,
         "in_process_orders": in_process_orders,
         "pending_orders": pending_orders,
+        "total_pages_printed": total_pages_printed,
     })
-
-
 
 
 
@@ -155,7 +155,7 @@ def upload_document(request, unique_url):
     The document is automatically linked to a specific shop owner.
     """
     user = get_object_or_404(CustomUser, unique_url=unique_url)
-
+    print("This is slug URL : ", unique_url)
     if request.method == 'POST':
         form = DocumentForm(request.POST, request.FILES)
         if form.is_valid():
@@ -169,3 +169,32 @@ def upload_document(request, unique_url):
         form = DocumentForm()
 
     return render(request, 'users/upload.html', {'form': form, 'user': user})
+
+
+
+
+
+
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.response import Response
+from rest_framework.renderers import JSONRenderer
+from .models import Order
+from .serializers import OrderSerializer
+
+@api_view(['GET'])
+@renderer_classes([JSONRenderer])  # Ensure JSON response
+def get_pending_orders(request):
+    pending_orders = Order.objects.filter(status="pending")
+    print("these are pending orders : ", pending_orders)
+    serializer = OrderSerializer(pending_orders, many=True)
+    return Response(serializer.data)  # Returns JSON
+
+@api_view(['POST'])
+def update_order_status(request, order_id):
+    try:
+        order = Order.objects.get(id=order_id)
+        order.status = request.data.get('status', order.status)
+        order.save()
+        return Response({"message": "Order updated successfully!"})
+    except Order.DoesNotExist:
+        return Response({"error": "Order not found!"}, status=404)

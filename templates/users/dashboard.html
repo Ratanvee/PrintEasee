@@ -3,6 +3,8 @@
 
 <head>
     <title>Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+
 </head>
 
 <body>
@@ -140,6 +142,41 @@
     <p>✅ Completed Orders: {{ completed_orders }}</p>
     <p>🔄 In Process: {{ in_process_orders }}</p>
     <p>⏳ Pending Orders: {{ pending_orders }}</p>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <style>
+        #qrcode {
+            display: inline-block;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+    </style>
+
+    <h2>Your QR Code</h2>
+    <div id="qrcode"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let qrText = "http://127.0.0.1:8000/upload/" + "{{ request.user.unique_url|escapejs }}";  // Get URL from Django context
+            let qrDiv = document.getElementById("qrcode");
+
+            if (!qrText.trim()) {
+                qrDiv.innerHTML = "<p>No URL available</p>";
+                return;
+            }
+
+            // Create QR Code
+            let qr = qrcode(0, "L"); // Version 0, Low error correction
+            qr.addData(qrText);
+            qr.make();
+
+            // Display as SVG (not an image)
+            qrDiv.innerHTML = qr.createSvgTag(5, 0);
+        });
+    </script>
 
 
 

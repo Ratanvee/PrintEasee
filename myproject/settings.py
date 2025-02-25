@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     
 ]
 
-
+LOGIN_REDIRECT_URL = "/dashboard/"
 
 
 MIDDLEWARE = [
@@ -54,6 +54,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware'
+    
 ]
 
 ROOT_URLCONF = 'myproject.urls'
@@ -90,7 +91,7 @@ AUTH_USER_MODEL = 'users.CustomUser'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
-ALLOWED_HOSTS = ['printeasee.onrender.com', '127.0.0.1']
+ALLOWED_HOSTS = ['printeasee.onrender.com', '127.0.0.1', ".vercel.app", "localhost"]
 
 
  
@@ -125,9 +126,17 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ]
+}
+
 import os
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

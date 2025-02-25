@@ -40,8 +40,6 @@ class Document(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
-
-
     PAPER_SIZE_CHOICES = [
         ('A4', 'A4'),
         ('A3', 'A3'),
@@ -62,5 +60,44 @@ class Document(models.Model):
     paper_size = models.CharField(max_length=10, choices=PAPER_SIZE_CHOICES, default='A4')  # ✅ ADD THIS FIELD
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
+    num_pages = models.PositiveIntegerField(default=1)  # Stores page count
+    
     def __str__(self):
+        # if self.file:
+        #     try:
+        pdf = PdfReader(self.file)
+        self.num_pages = len(pdf.pages)  # Count total pages
+        print('NO. of pages : ', self.num_pages)
+            # except:
+        self.num_pages = 1  # Default to 1 if there's an error
+        print('This is default value ')
         return f"{self.user.username} - {self.file.name}"
+    
+    # def save(self, *args, **kwargs):
+    #     """Calculate the number of pages in the uploaded PDF before saving."""
+    #     if self.file:
+    #         try:
+    #             pdf = PdfReader(self.file)
+    #             self.num_pages = len(pdf.pages)  # Count total pages
+    #             print('NO. of pages : ', self.num_pages)
+    #         except:
+    #             self.num_pages = 1  # Default to 1 if there's an error
+    #             print('This is default value ')
+
+
+
+
+from django.db import models
+
+class Order(models.Model):
+    customer_name = models.CharField(max_length=255)
+    document = models.FileField(upload_to='uploads/')
+    status = models.CharField(max_length=50, choices=[
+        ('pending', 'Pending'),
+        ('in_process', 'In Process'),
+        ('completed', 'Completed')
+    ], default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.customer_name} - {self.status}"
