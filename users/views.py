@@ -175,26 +175,26 @@ def upload_document(request, unique_url):
 
 
 
-from rest_framework.decorators import api_view, renderer_classes
-from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer
-from .models import Order
-from .serializers import OrderSerializer
+# from rest_framework.decorators import api_view, renderer_classes
+# from rest_framework.response import Response
+# from rest_framework.renderers import JSONRenderer
+# from .models import Order
+# from .serializers import OrderSerializer
 
-@api_view(['GET'])
-@renderer_classes([JSONRenderer])  # Ensure JSON response
-def get_pending_orders(request):
-    pending_orders = Order.objects.filter(status="pending")
-    print("these are pending orders : ", pending_orders)
-    serializer = OrderSerializer(pending_orders, many=True)
-    return Response(serializer.data)  # Returns JSON
+# @api_view(['GET'])
+# @renderer_classes([JSONRenderer])  # Ensure JSON response
+# def get_pending_orders(request):
+#     pending_orders = Order.objects.filter(status="pending")
+#     print("these are pending orders : ", pending_orders)
+#     serializer = OrderSerializer(pending_orders, many=True)
+#     return Response(serializer.data)  # Returns JSON
 
-@api_view(['POST'])
-def update_order_status(request, order_id):
-    try:
-        order = Order.objects.get(id=order_id)
-        order.status = request.data.get('status', order.status)
-        order.save()
-        return Response({"message": "Order updated successfully!"})
-    except Order.DoesNotExist:
-        return Response({"error": "Order not found!"}, status=404)
+# @api_view(['POST'])
+# def update_order_status(request, order_id):
+#     try:
+#         order = Order.objects.get(id=order_id)
+#         order.status = request.data.get('status', order.status)
+#         order.save()
+#         return Response({"message": "Order updated successfully!"})
+#     except Order.DoesNotExist:
+#         return Response({"error": "Order not found!"}, status=404)
