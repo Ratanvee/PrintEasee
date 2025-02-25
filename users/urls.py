@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import register, user_login, user_logout, dashboard, upload_document, home
 from django.urls import path
-from .views import get_pending_orders, update_order_status
+# from .views import get_pending_orders, update_order_status
 # from .views import dashboard, redirect_to_owner_dashboard
 
 urlpatterns = [
