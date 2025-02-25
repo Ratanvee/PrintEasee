@@ -3,7 +3,7 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
-
+from bson import ObjectId
 from .models import CustomUser, Document
 from .forms import RegisterForm, DocumentForm
 
@@ -65,6 +65,15 @@ def user_logout(request):
     return redirect('login')
 
 
+from bson import Decimal128  # Import Decimal128 from bson
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
+from django.utils.timezone import now
+from datetime import timedelta
+from .models import Document
+
 @login_required
 def dashboard(request):
     user = request.user
@@ -76,10 +85,16 @@ def dashboard(request):
     start_of_year = today.replace(month=1, day=1)
 
     def get_order_and_revenue(start_date):
-        documents = Document.objects.filter(user=user, uploaded_at__date__gte=start_date)
+        documents = Document.objects.filter(user=user)
+        
+        # Python-side filtering since database filtering on date is not working
+        filtered_docs = [doc for doc in documents if doc.uploaded_at.date() >= start_date]
+
+        revenue = sum(float(doc.price.to_decimal()) for doc in filtered_docs if doc.price is not None)
+        
         return {
-            "orders": documents.count(),
-            "revenue": documents.aggregate(Sum('price'))['price__sum'] or 0
+            "orders": len(filtered_docs),
+            "revenue": revenue
         }
 
     stats = {
@@ -89,7 +104,7 @@ def dashboard(request):
         "year": get_order_and_revenue(start_of_year),
         "all_time": {
             "orders": Document.objects.filter(user=user).count(),
-            "revenue": Document.objects.filter(user=user).aggregate(Sum('price'))['price__sum'] or 0
+            "revenue": sum(float(doc.price.to_decimal()) for doc in Document.objects.filter(user=user) if doc.price is not None)
         }
     }
 
@@ -97,14 +112,18 @@ def dashboard(request):
     all_orders = Document.objects.filter(user=user).order_by('-uploaded_at')
 
     # Count unique customers who uploaded documents for this logged-in owner
-    unique_customers = Document.objects.filter(user=user).values('user').distinct().count()
+    # unique_customers = Document.objects.filter(user=user).values_list('customer', flat=True).distinct().count()
+    # unique_customers = Document.objects.filter(user=user).values_list('user', flat=True).distinct().count()
+    unique_customers = len(set(Document.objects.filter(user=user).values_list('user', flat=True)))
+
+
 
     completed_orders = Document.objects.filter(user=user, status="completed").count()
     in_process_orders = Document.objects.filter(user=user, status="in_process").count()
     pending_orders = Document.objects.filter(user=user, status="pending").count()
 
     # Total pages printed by this owner
-    total_pages_printed = Document.objects.filter(user=user).aggregate(Sum('num_pages'))['num_pages__sum'] or 0
+    total_pages_printed = Document.objects.filter(user=user).aggregate(total_pages=Sum('num_pages'))['total_pages'] or 0
 
     return render(request, 'users/dashboard.html', {
         'user': user,
@@ -116,6 +135,7 @@ def dashboard(request):
         "pending_orders": pending_orders,
         "total_pages_printed": total_pages_printed,
     })
+
 
 
 
@@ -154,7 +174,12 @@ def upload_document(request, unique_url):
     Allows customers to upload a document with print customizations.
     The document is automatically linked to a specific shop owner.
     """
-    user = get_object_or_404(CustomUser, unique_url=unique_url)
+    # user = get_object_or_404(CustomUser, unique_url=unique_url)
+    user = CustomUser.objects.filter(unique_url=unique_url).first()
+
+    # if not user:
+    #     raise Http404("User not found")
+    
     print("This is slug URL : ", unique_url)
     if request.method == 'POST':
         form = DocumentForm(request.POST, request.FILES)

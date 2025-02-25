@@ -29,8 +29,26 @@ DEBUG = True
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = ['printerapp-rehk.onrender.com', '127.0.0.1', 'localhost','printeasee-2.onrender.com']
 
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+AUTH_USER_MODEL = 'users.CustomUser'  # If using a custom user model
 
 # Application definition
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'djongo',
+        'NAME': 'PrintEaseDB',  # Your database name
+        'CLIENT': {
+            'host': "mongodb+srv://ratanveersingh22:hEDWNSi5jiIIIctT@cluster0.d4eas.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+            'tls': True,
+            'tlsAllowInvalidCertificates': True,  # Add this line
+        },
+    }
+}
+
+
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -78,12 +96,12 @@ WSGI_APPLICATION = 'myproject.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 # DATABASES = {
 #     'default': {
