@@ -223,7 +223,7 @@ def is_printer_connected():
     """Check if a printer is connected."""
     try:
         if platform.system() == "Windows":
-            import win32print
+            # import win32print
             printers = win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL)
             return bool(printers)  # True if printers exist
         else:
