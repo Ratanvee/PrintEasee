@@ -74,6 +74,82 @@ from django.utils.timezone import now
 from datetime import timedelta
 from .models import Document
 
+# @login_required
+# def dashboard(request):
+#     user = request.user
+#     today = now().date()
+
+#     # Define time ranges
+#     start_of_week = today - timedelta(days=today.weekday())
+#     start_of_month = today.replace(day=1)
+#     start_of_year = today.replace(month=1, day=1)
+
+#     def get_order_and_revenue(start_date):
+#         documents = Document.objects.filter(user=user)
+        
+#         # Python-side filtering since database filtering on date is not working
+#         filtered_docs = [doc for doc in documents if doc.uploaded_at.date() >= start_date]
+
+#         revenue = sum(float(doc.price.to_decimal()) for doc in filtered_docs if doc.price is not None)
+        
+#         return {
+#             "orders": len(filtered_docs),
+#             "revenue": revenue
+#         }
+
+#     stats = {
+#         "today": get_order_and_revenue(today),
+#         "week": get_order_and_revenue(start_of_week),
+#         "month": get_order_and_revenue(start_of_month),
+#         "year": get_order_and_revenue(start_of_year),
+#         "all_time": {
+#             "orders": Document.objects.filter(user=user).count(),
+#             "revenue": sum(float(doc.price.to_decimal()) for doc in Document.objects.filter(user=user) if doc.price is not None)
+#         }
+#     }
+
+#     # Fetch all uploaded documents of the logged-in owner
+#     all_orders = Document.objects.filter(user=user).order_by('-uploaded_at')
+
+#     # Count unique customers who uploaded documents for this logged-in owner
+#     # unique_customers = Document.objects.filter(user=user).values_list('customer', flat=True).distinct().count()
+#     # unique_customers = Document.objects.filter(user=user).values_list('user', flat=True).distinct().count()
+#     unique_customers = len(set(Document.objects.filter(user=user).values_list('user', flat=True)))
+
+
+
+#     completed_orders = Document.objects.filter(user=user, status="completed").count()
+#     in_process_orders = Document.objects.filter(user=user, status="in_process").count()
+#     pending_orders = Document.objects.filter(user=user, status="pending").count()
+
+#     # Total pages printed by this owner
+#     total_pages_printed = Document.objects.filter(user=user).aggregate(total_pages=Sum('num_pages'))['total_pages'] or 0
+
+#     return render(request, 'users/dashboard.html', {
+#         'user': user,
+#         'stats': stats,
+#         'all_orders': all_orders,
+#         'total_customers': unique_customers,
+#         "completed_orders": completed_orders,
+#         "in_process_orders": in_process_orders,
+#         "pending_orders": pending_orders,
+#         "total_pages_printed": total_pages_printed,
+#     })
+
+
+
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
+from django.utils.timezone import now
+from datetime import timedelta
+import os
+import win32print
+import win32api
+from django.db.models.functions import TruncDate
+from users.models import Document
+
 @login_required
 def dashboard(request):
     user = request.user
@@ -96,6 +172,7 @@ def dashboard(request):
             "orders": len(filtered_docs),
             "revenue": revenue
         }
+    
 
     stats = {
         "today": get_order_and_revenue(today),
@@ -111,12 +188,8 @@ def dashboard(request):
     # Fetch all uploaded documents of the logged-in owner
     all_orders = Document.objects.filter(user=user).order_by('-uploaded_at')
 
-    # Count unique customers who uploaded documents for this logged-in owner
-    # unique_customers = Document.objects.filter(user=user).values_list('customer', flat=True).distinct().count()
-    # unique_customers = Document.objects.filter(user=user).values_list('user', flat=True).distinct().count()
+    # Count unique customers who uploaded documents
     unique_customers = len(set(Document.objects.filter(user=user).values_list('user', flat=True)))
-
-
 
     completed_orders = Document.objects.filter(user=user, status="completed").count()
     in_process_orders = Document.objects.filter(user=user, status="in_process").count()
@@ -124,6 +197,13 @@ def dashboard(request):
 
     # Total pages printed by this owner
     total_pages_printed = Document.objects.filter(user=user).aggregate(total_pages=Sum('num_pages'))['total_pages'] or 0
+
+    printer_status = is_printer_connected()
+
+    # **Automatic Printing of Pending Orders**
+    printer_name = win32print.GetDefaultPrinter()  # Get default printer
+    if pending_orders > 0:
+        print_pending_orders(user, printer_name)
 
     return render(request, 'users/dashboard.html', {
         'user': user,
@@ -134,8 +214,54 @@ def dashboard(request):
         "in_process_orders": in_process_orders,
         "pending_orders": pending_orders,
         "total_pages_printed": total_pages_printed,
+        'printer_status': printer_status,
     })
 
+import platform
+
+def is_printer_connected():
+    """Check if a printer is connected."""
+    try:
+        if platform.system() == "Windows":
+            import win32print
+            printers = win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL)
+            return bool(printers)  # True if printers exist
+        else:
+            import cups
+            conn = cups.Connection()
+            printers = conn.getPrinters()
+            return bool(printers)  # True if printers exist
+    except Exception as e:
+        print(f"Error checking printer status: {e}")
+        return False
+
+
+def print_pending_orders(user, printer_name):
+    """Process pending print jobs and update their statuses."""
+    pending_orders = Document.objects.filter(user=user, status='pending')
+    # from users.models import Document
+
+    for doc in Document.objects.all():
+        print(f"ID: {doc.id}, Price: {doc.price}, Type: {type(doc.price)}")
+
+    for order in pending_orders:
+        file_path = order.file.path
+
+        if not os.path.exists(file_path):
+            continue  # Skip if file doesn't exist
+
+        try:
+            # Mark as 'in_process' before printing
+            order.status = 'in_process'
+            order.save()
+
+            win32api.ShellExecute(0, "print", file_path, f'/d:"{printer_name}"', ".", 0)
+
+            # After sending to printer, mark as completed
+            order.status = 'completed'
+            order.save()
+        except Exception as e:
+            print(f"Error printing {file_path}: {e}")
 
 
 
