@@ -50,7 +50,20 @@ def register(request):
 
 
 
+# def user_login(request):
+#     if request.method == 'POST':
+#         username = request.POST['username']
+#         password = request.POST['password']
+#         user = authenticate(request, username=username, password=password)
+#         if user:
+#             login(request, user)
+#             return redirect('dashboard')
+#     return render(request, 'users/login.html', {'error': 'username or password is incorrect'})
+
+
 def user_login(request):
+    error_message = None  # Initialize error message
+    
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
@@ -58,7 +71,12 @@ def user_login(request):
         if user:
             login(request, user)
             return redirect('dashboard')
-    return render(request, 'users/login.html', {'error': 'username or password is incorrect'})
+        else:
+            error_message = "Username or password is incorrect."
+
+    return render(request, 'users/login.html', {'error': error_message})
+
+
 
 def user_logout(request):
     logout(request)
@@ -150,6 +168,75 @@ import win32api
 from django.db.models.functions import TruncDate
 from users.models import Document
 
+# @login_required
+# def dashboard(request):
+#     user = request.user
+#     today = now().date()
+
+#     # Define time ranges
+#     start_of_week = today - timedelta(days=today.weekday())
+#     start_of_month = today.replace(day=1)
+#     start_of_year = today.replace(month=1, day=1)
+
+#     def get_order_and_revenue(start_date):
+#         documents = Document.objects.filter(user=user)
+        
+#         # Python-side filtering since database filtering on date is not working
+#         filtered_docs = [doc for doc in documents if doc.uploaded_at.date() >= start_date]
+
+#         # revenue = sum(float(doc.price.to_decimal()) for doc in filtered_docs if doc.price is not None)
+#         revenue = sum(float(doc.price) for doc in filtered_docs if doc.price is not None)
+
+        
+#         return {
+#             "orders": len(filtered_docs),
+#             "revenue": revenue
+#         }
+    
+
+#     stats = {
+#         "today": get_order_and_revenue(today),
+#         "week": get_order_and_revenue(start_of_week),
+#         "month": get_order_and_revenue(start_of_month),
+#         "year": get_order_and_revenue(start_of_year),
+#         "all_time": {
+#             "orders": Document.objects.filter(user=user).count(),
+#             "revenue": sum(float(doc.price.to_decimal()) for doc in Document.objects.filter(user=user) if doc.price is not None)
+#         }
+#     }
+
+#     # Fetch all uploaded documents of the logged-in owner
+#     all_orders = Document.objects.filter(user=user).order_by('-uploaded_at')
+
+#     # Count unique customers who uploaded documents
+#     unique_customers = len(set(Document.objects.filter(user=user).values_list('user', flat=True)))
+
+#     completed_orders = Document.objects.filter(user=user, status="completed").count()
+#     in_process_orders = Document.objects.filter(user=user, status="in_process").count()
+#     pending_orders = Document.objects.filter(user=user, status="pending").count()
+
+#     # Total pages printed by this owner
+#     total_pages_printed = Document.objects.filter(user=user).aggregate(total_pages=Sum('num_pages'))['total_pages'] or 0
+
+#     printer_status = is_printer_connected()
+
+#     # **Automatic Printing of Pending Orders**
+#     printer_name = win32print.GetDefaultPrinter()  # Get default printer
+#     if pending_orders > 0:
+#         print_pending_orders(user, printer_name)
+
+#     return render(request, 'users/dashboard.html', {
+#         'user': user,
+#         'stats': stats,
+#         'all_orders': all_orders,
+#         'total_customers': unique_customers,
+#         "completed_orders": completed_orders,
+#         "in_process_orders": in_process_orders,
+#         "pending_orders": pending_orders,
+#         "total_pages_printed": total_pages_printed,
+#         'printer_status': printer_status
+#     })
+
 @login_required
 def dashboard(request):
     user = request.user
@@ -166,13 +253,12 @@ def dashboard(request):
         # Python-side filtering since database filtering on date is not working
         filtered_docs = [doc for doc in documents if doc.uploaded_at.date() >= start_date]
 
-        revenue = sum(float(doc.price.to_decimal()) for doc in filtered_docs if doc.price is not None)
-        
+        revenue = sum(float(doc.price) for doc in filtered_docs if doc.price is not None)
+
         return {
             "orders": len(filtered_docs),
             "revenue": revenue
         }
-    
 
     stats = {
         "today": get_order_and_revenue(today),
@@ -181,7 +267,7 @@ def dashboard(request):
         "year": get_order_and_revenue(start_of_year),
         "all_time": {
             "orders": Document.objects.filter(user=user).count(),
-            "revenue": sum(float(doc.price.to_decimal()) for doc in Document.objects.filter(user=user) if doc.price is not None)
+            "revenue": sum(float(doc.price) for doc in Document.objects.filter(user=user) if doc.price is not None)  # Fixed
         }
     }
 
@@ -189,7 +275,7 @@ def dashboard(request):
     all_orders = Document.objects.filter(user=user).order_by('-uploaded_at')
 
     # Count unique customers who uploaded documents
-    unique_customers = len(set(Document.objects.filter(user=user).values_list('user', flat=True)))
+    unique_customers = Document.objects.filter(user=user).values_list('user', flat=True).distinct().count()
 
     completed_orders = Document.objects.filter(user=user, status="completed").count()
     in_process_orders = Document.objects.filter(user=user, status="in_process").count()
@@ -214,8 +300,13 @@ def dashboard(request):
         "in_process_orders": in_process_orders,
         "pending_orders": pending_orders,
         "total_pages_printed": total_pages_printed,
-        'printer_status': printer_status,
+        'printer_status': printer_status
     })
+
+
+
+
+
 
 import platform
 
@@ -223,7 +314,7 @@ def is_printer_connected():
     """Check if a printer is connected."""
     try:
         if platform.system() == "Windows":
-            # import win32print
+            import win32print
             printers = win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL)
             return bool(printers)  # True if printers exist
         else:
@@ -349,3 +440,9 @@ def upload_document(request, unique_url):
 #         return Response({"message": "Order updated successfully!"})
 #     except Order.DoesNotExist:
 #         return Response({"error": "Order not found!"}, status=404)
+
+
+
+
+def custom_404_view(request, exception):
+    return render(request, '404.html', status=404)

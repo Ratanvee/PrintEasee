@@ -11,10 +11,10 @@ class DocumentAdmin(admin.ModelAdmin):
 
 
 
-from django.contrib import admin
-from .models import PrintOrder
+# from django.contrib import admin
+# from .models import PrintOrder
 
-@admin.register(PrintOrder)
-class PrintOrderAdmin(admin.ModelAdmin):
-    list_display = ('file', 'status', 'created_at')
-    list_filter = ('status',)
+# @admin.register(PrintOrder)
+# class PrintOrderAdmin(admin.ModelAdmin):
+#     list_display = ('file', 'status', 'created_at')
+#     list_filter = ('status',)

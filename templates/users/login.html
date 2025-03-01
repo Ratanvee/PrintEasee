@@ -84,7 +84,7 @@
 
 <body>
     <div class="login-container">
-        <p style="color: red;">{{ error }}</p>
+        <p style="color: red; display: none;" id="login_error">{{ error }}</p>
         <h2>Sign in</h2>
         <form method="post">
             {% csrf_token %}
@@ -100,6 +100,10 @@
         <button class="facebook-btn">&#x1F30D; SIGN IN WITH FACEBOOK</button>
     </div>
 </body>
+{%if error%}
+<script>
+    document.getElementById("login_error").style.display = "block";
+</script>
+{% endif %}
 
 </html>
-

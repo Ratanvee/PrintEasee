@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Dashboard</title>
+    <title>{{ user.username }} | Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 
 </head>
@@ -11,17 +11,18 @@
     <div class="printer-status">
         <strong>Printer Status:</strong>
         {% if printer_status %}
-            <span style="color: green; font-weight: bold;">Connected ✅</span>
+        <span style="color: green; font-weight: bold;">Connected ✅</span>
         {% else %}
-            <span style="color: red; font-weight: bold;">Not Connected ❌</span>
+        <span style="color: red; font-weight: bold;">Not Connected ❌</span>
         {% endif %}
     </div>
-    
+
     <h2>Welcome, {{ request.user.username }}</h2>
 
     <h3>Your Unique Upload URL:</h3>
     <!-- <p>Share this link with customers: <b>http://127.0.0.1:8000/upload/{{ request.user.unique_url }}/</b></p> -->
-    <p>Share this link with customers: <b>https://printeasee-2.onrender.com/upload/{{ request.user.unique_url }}/</b></p>
+    <p>Share this link with customers: <b>https://printeasee-2.onrender.com/upload/{{ request.user.unique_url }}/</b>
+    </p>
 
 
     <h2>Welcome, {{ user.username }}!</h2>
@@ -170,10 +171,10 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // let qrText = "http://127.0.0.1:8000/upload/" + "{{ request.user.unique_url|escapejs }}";  // Get URL from Django context
-            let qrText = "https://printeasee-2.onrender.com/upload/" + "{{ request.user.unique_url|escapejs }}";  // Get URL from Django context
+            // let qrText = "http://127.0.0.1:8000/upload/" + "{{ request.user.unique_url|escapejs }}"; 
+            let qrText = "https://printeasee-2.onrender.com/upload/" + "{{ request.user.unique_url|escapejs }}";
             let qrDiv = document.getElementById("qrcode");
-
+            console.log("This is QR URL : ", qrText)
             if (!qrText.trim()) {
                 qrDiv.innerHTML = "<p>No URL available</p>";
                 return;
